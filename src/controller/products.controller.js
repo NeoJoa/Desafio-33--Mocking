@@ -1,45 +1,57 @@
 import { ProductsService } from "../dao/repositories/index.js";
+import customError from "../errors/customError.js";
+import { enumErrors } from "../errors/enumErrors.js";
 
-export const post = async (req, res) => {
-  const {
-    title,
-    description,
-    code,
-    price,
-    status = true,
-    stock,
-    category,
-    thumbnails,
-  } = req.body;
+export const post = async (req, res, next) => {
+  try {
+    const {
+      title,
+      description,
+      code,
+      price,
+      status = true,
+      stock,
+      category,
+      thumbnails,
+    } = req.body;
 
-  if (
-    !title ||
-    !description ||
-    !code ||
-    !price ||
-    !status ||
-    !stock ||
-    !category ||
-    !thumbnails
-  )
-    return res.status(400).send({ status: 400, error: "Missing values" });
+    if (
+      !title ||
+      !description ||
+      !code ||
+      !price ||
+      !status ||
+      !stock ||
+      !category ||
+      !thumbnails
+    )
+      customError.create({
+        name: "Error when trying post a product",
+        message: "Complete the inputs to create the product correctly",
+        cause: "Incomplete required inputs",
+        code: enumErrors.MISSING_VALUES,
+        statusCode: 400,
+      });
 
-  const product = {
-    title,
-    description,
-    code,
-    price,
-    status,
-    stock,
-    category,
-    thumbnails,
-  };
+    const product = {
+      title,
+      description,
+      code,
+      price,
+      status,
+      stock,
+      category,
+      thumbnails,
+    };
 
-  const postResponse = await ProductsService.post(product);
+    const postResponse = await ProductsService.post(product);
 
-  return !postResponse.error
-    ? res.status(201).send(postResponse)
-    : res.status(postResponse.status).send(postResponse);
+    return !postResponse.error
+      ? res.status(201).send(postResponse)
+      : res.status(postResponse.status).send(postResponse);
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const getAll = async (req, res) => {

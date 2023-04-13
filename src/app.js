@@ -8,10 +8,12 @@ import sessionRouter from "./routes/sessionsRoutes.js";
 import productsRoutes from "./routes/productsRoutes.js";
 import cartsRoutes from "./routes/cartsRoutes.js";
 import usersRoutes from "./routes/usersRoutes.js";
+import mockingRoutes from "./routes/mocking-productsRoutes.js";
 import messageModel from "./dao/models/messages.model.js";
 import passport from "passport";
 import initPassport from "./config/passportConfig.js";
 import config from "./config/config.js";
+import handleError from "./middlewares/handleError.js";
 
 const app = express();
 
@@ -39,6 +41,9 @@ app.use("/api/session", sessionRouter);
 app.use("/api/products", productsRoutes);
 app.use("/api/carts", cartsRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/mockingproducts", mockingRoutes);
+
+app.use(handleError);
 
 async function getLogs() {
   return await messageModel.find();

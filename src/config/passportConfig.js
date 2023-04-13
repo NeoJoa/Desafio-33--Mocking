@@ -30,7 +30,7 @@ const initPassport = () => {
     new JwtStrategy(
       {
         jwtFromRequest: ExtractJwt.fromExtractors([cookieExtractor]),
-        secretOrKey: "coderSecret",
+        secretOrKey: "secretCode",
       },
       async (jwt_payload, done) => {
         try {

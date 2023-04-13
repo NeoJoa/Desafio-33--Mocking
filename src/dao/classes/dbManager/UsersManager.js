@@ -15,7 +15,6 @@ export default class UsersManager {
 
   async getAll() {
     try {
-      if (query) query = JSON.parse(query);
       return await usersModel.find().lean();
     } catch (error) {
       return {
@@ -31,6 +30,7 @@ export default class UsersManager {
       const user = await usersModel.findOne(param).lean();
       return user;
     } catch (error) {
+      console.log(error);
       return {
         status: 500,
         error: `An error occurred while obtaining the user`,

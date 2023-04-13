@@ -16,7 +16,7 @@ export default class CartsManager {
       carts.push(newCart);
       await this.writeFile(carts);
       return {
-        status: "success",
+        status: "succes",
         message: `Carts posted successfully`,
         id: newCart.id,
       };
