@@ -1,0 +1,10 @@
+Adminitrador y password
+adminCoder@coder.com
+adminCod3r123
+
+
+CONNECTION= "mongodb+srv://NeoJoa:joaquin50@codercluster.f8re0dp.mongodb.net/?retryWrites=true&w=majority"
+BCRYPTGENSALT= 10
+JWTKEY= "secretCode"
+PERSISTENCE = "MONGO"
+MAILPASSWORD= "cyjmsqaoicdgvxzx"

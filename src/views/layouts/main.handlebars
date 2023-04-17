@@ -1,56 +1,13 @@
+<!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" type="text/css" href="/css/index.css" />
-    <title>Desafio 28 - Reestructurar Server</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio 30 - Tercera Pre-Entrega</title>
   </head>
   <body>
-    <header>
-      <nav>
-        <ul>
-          <li style="display: inline">
-            <a class="headerLogo" href="/">JA</a>
-          </li>
-          <li class="linkContainer">
-            <a class="navLink" href="/">Home</a>
-          </li>
-          <li class="linkContainer">
-            <a class="navLink" href="/products">Catalogo</a>
-          </li>
-          <li class="linkContainer">
-            <a class="navLink" href="/chat">Chat</a>
-          </li>
-        </ul>
-        <ul>
-          <li class="cartLinkContainer">
-            <a class="cartLink" href="/cart">🛒</a>
-          </li>
-          {{#if isLogin}}
-          <li class="cartLinkContainer">
-            <a class="cartLink" href="/profile">🧑</a>
-          </li>
-          {{else}}
-          <li class="linkContainer">
-            <a class="navLink" href="/register">Registro</a>
-          </li>
-          <li class="linkContainer">
-            <a class="navLink" href="/login">Login</a>
-          </li>
-          {{/if}}
-          {{#if isLogin}}
-          <li class="linkContainer">
-            <button style="background: none; color: #ffff; border:none; cursor: pointer; font-weight:600;" onclick={logout()}>Logout<button/>
-          </li>
-          {{/if}}
-        </ul>
-      </nav>
-    </header>
-    {{{body}}}
-
-    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/js/index.js"></script>
+     {{{body}}}
   </body>
-  <footer>Joaquin Aquino - Proyecto Backend CoderHouse 2023</footer>
+  <script src="https://kit.fontawesome.com/490d09fdd3.js" crossorigin="anonymous"></script>
 </html>

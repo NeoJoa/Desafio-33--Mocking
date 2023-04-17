@@ -1,48 +1,54 @@
 const socket = io();
-const inputMessage = document.getElementById("inputMessage");
-const log = document.getElementById("log");
+const chatBox = document.getElementById('chatBox'); // No es estrictamente necesario
 
-Swal.fire({
-  title: "Identify yourself",
-  input: "email",
-  text: "Enter your e-mail",
-  inputValidator: (value) => {
-    return !value && "You need an email";
-  },
-  allowOutsideClick: false,
-  allowEscapeKey: false,
-}).then((result) => {
-  user = result.value;
-  socket.emit("userAuth");
-});
+let user = document.getElementById("user").innerHTML
+socket.emit('authenticated', user);
 
-socket.on("newUser", (data) => {
-  Swal.fire({
-    toast: true,
-    icon: "info",
-    position: "top-right",
-    html: "New user active",
-    timer: 3000,
-    timerProgressBar: true,
-    showConfirmButton: false,
-  });
-});
+let userRole
 
-inputMessage.addEventListener("keyup", (e) => {
-  if (e.key === "Enter" && inputMessage.value.trim().length > 0) {
-    socket.emit("message", {
-      user,
-      message: inputMessage.value,
-      time: `${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}`,
-    });
-    inputMessage.value = "";
-  }
-});
+fetch('/api/session/current', {
+    method: "GET",
+    headers: {
+        "Content-Type": "application/json",
+    }
+}).then(info => info.json()).then(json => json.role).then(role => userRole = role);
 
-socket.on("log", (data) => {
-  let logs = "";
-  data.logs.forEach((log) => {
-    logs += `<div class="messageContainer"><span class="message">${log.user}: ${log.message}</span><span class="time">${log.time}</span></div>`;
-  });
-  log.innerHTML = logs;
-});
+chatBox.addEventListener('keyup', event => {
+    if (event.key === 'Enter') {
+        if (chatBox.value.trim().length > 0) {
+            socket.emit('message', {user: user, role: userRole, message: chatBox.value});
+            chatBox.value = '';
+        }
+    }
+})
+
+function sendMessage() {
+    if (chatBox.value.trim().length > 0) {
+        socket.emit('message', {user: user, role: userRole, message: chatBox.value});
+        chatBox.value = '';
+    }
+}
+
+socket.on('Messages', data => {
+    if (!user) return;
+    let log = document.getElementById('chatZone');
+    let messages = '';
+    data.forEach(message => {
+        messages = messages + `<div class="message"><p class="user">${message.user}</p><p>${message.message}</p></div>`
+    })
+    log.innerHTML = messages;
+})
+
+socket.on('newUserConnected', data => {
+    if(!user) return;
+    Swal.fire({
+        background: 'rgb(20,20,20)',
+        color: 'rgb(180, 180, 180)',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        title: `${data} se ha unido al chat`,
+        icon: "success"
+    })
+})

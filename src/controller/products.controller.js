@@ -1,113 +1,100 @@
-import { ProductsService } from "../dao/repositories/index.js";
-import customError from "../errors/customError.js";
-import { enumErrors } from "../errors/enumErrors.js";
+import { ProductsService as pm } from '../dao/repository/index.js';
 
-export const post = async (req, res, next) => {
-  try {
-    const {
-      title,
-      description,
-      code,
-      price,
-      status = true,
-      stock,
-      category,
-      thumbnails,
-    } = req.body;
+export default class ProductController {
+    get = async(req, res) => {
+        try {
+            let {limit = 10, page = 1, query = 'none', sort} = req.query;
+            let products;
+        
+            if (query != "none") {
+        
+                let replaces = 0; // Reemplazar ' por "
+                for (var i = 0; i < query.length; i++) {
+                    if (query[i] == "'") replaces += 1;
+                }
+                for (var i = 0; i < replaces; i ++) {
+                    query = query.replace(/'/, '"');
+                }
+        
+                JSON.parse(query);
+                products = await pm.getSome(limit, page, query, sort);
+            } else {
+                products = await pm.getSome(limit, page, undefined, sort);
+            }
+        
+            page = parseInt(page);
+            let nextLink, prevLink;
+        
+            let invCharacters = 0; // Reemplaza los "" por su equivalente ASCII asi los links son validos
+            for (var i = 0; i < query.length; i++) {
+                if (query[i] == '"') invCharacters += 1;
+            }
+            for (var i = 0; i < invCharacters; i ++) {
+                query = query.replace(/"/, '%22');
+            }
+            query = query.replace(" ",""); // Quita un espacio por las dudas
+        
+            (products.hasNextPage == true ) ? nextLink = `http://localhost:8080/api/products/?limit=${limit}&page=${page+1}&query=${query}` : nextLink = null;
+            (products.hasPrevPage == true ) ? prevLink = `http://localhost:8080/api/products/?limit=${limit}&page=${page-1}&query=${query}` : prevLink = null;
+            
+            (!products)?res.status(500).send({status: "Error", error: "No info avaliable"}):res.send({status: "Ok", payload: products.docs, totalPages: products.totalPages, prevPage: products.prevPage, nextPage: products.nextPage, page: products.page, hasPrevPage: products.hasPrevPage, hasNextPage: products.hasNextPage, nextLink: nextLink, prevLink: prevLink});
+        } catch {
+            res.send({status: 400, message: "Query must me sent in the format query={'property':'condition'} with single or double marks"});
+        }
+    }
 
-    if (
-      !title ||
-      !description ||
-      !code ||
-      !price ||
-      !status ||
-      !stock ||
-      !category ||
-      !thumbnails
-    )
-      customError.create({
-        name: "Error when trying post a product",
-        message: "Complete the inputs to create the product correctly",
-        cause: "Incomplete required inputs",
-        code: enumErrors.MISSING_VALUES,
-        statusCode: 400,
-      });
+    post = async(req, res) => {
+        try {
+            const {title, description, code, price, stock, thumbnails} = req.body;
+            let newProduct = {
+                title,
+                description,
+                code,
+                price,
+                stock,
+                thumbnails
+            }
+        
+            if (!title || !description || !code || !price || !stock) {
+                res.send({status: 404, payload: "Some data is missing"});
+            } else {
+                const result = await pm.saveProduct(newProduct);
+                res.send({status: "Ok", payload: result});
+            }
+        } catch {
+            res.send({status: 400, message: "This method only allows to create one product and the code must be not used"});
+        }
+    }
 
-    const product = {
-      title,
-      description,
-      code,
-      price,
-      status,
-      stock,
-      category,
-      thumbnails,
-    };
+    put = async(req, res) => {
+        try {
+            const id = req.params.pid;
+    
+            const {title, description, code, price, stock, thumbnails} = req.body;
+            let newProduct = {
+                title,
+                description,
+                code,
+                price,
+                stock,
+                thumbnails
+            }
+    
+            let result = await pm.put(id, newProduct);
+            res.send({status: "Ok", payload: result});
+        } catch {
+            res.send({status: 400, message: "The pid doesnt exist"});
+        }
+    }
 
-    const postResponse = await ProductsService.post(product);
-
-    return !postResponse.error
-      ? res.status(201).send(postResponse)
-      : res.status(postResponse.status).send(postResponse);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getAll = async (req, res) => {
-  let { query, limit, page, sort } = req.query;
-  if (limit) limit = +limit;
-  if (page) page = +page;
-  if (sort) sort = +sort;
-  const getResponse = await ProductsService.getAll(query, limit, page, sort);
-
-  return !getResponse.error
-    ? res.status(200).json(getResponse)
-    : res.status(getResponse.status).send(getResponse);
-};
-
-export const getById = async (req, res) => {
-  const id = req.params.pid;
-  const getResponse = await ProductsService.getById(id);
-  return !getResponse.error
-    ? res.send(getResponse)
-    : res.status(getResponse.status).send(getResponse);
-};
-
-export const putById = async (req, res) => {
-  const id = req.params.pid;
-  const {
-    title,
-    description,
-    code,
-    price,
-    status,
-    stock,
-    category,
-    thumbnails,
-  } = req.body;
-  const object = {
-    title,
-    description,
-    code,
-    price,
-    status,
-    stock,
-    category,
-    thumbnails,
-  };
-  const putResponse = await ProductsService.putById(id, object);
-
-  return !putResponse.error
-    ? res.send(putResponse)
-    : res.status(putResponse.status).send(putResponse);
-};
-
-export const deleteById = async (req, res) => {
-  const id = req.params.pid;
-  const deleteResponse = await ProductsService.deleteById(id);
-
-  return !deleteResponse.error
-    ? res.send(deleteResponse)
-    : res.status(deleteResponse.status).send(deleteResponse);
-};
+    delete = async(req, res) => {
+        try {
+            const id = req.params.pid;
+    
+            let result = await pm.delete(id);
+            res.send({status: "Ok", payload: result});
+        } catch {
+            res.send({status: 400, message: "The pid doesnt exist"});
+        }
+    }
+}

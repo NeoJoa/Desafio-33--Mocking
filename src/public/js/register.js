@@ -1,22 +1,22 @@
-const registerForm = document.getElementById("registerForm");
+const form = document.getElementById("registerForm");
 
-registerForm.addEventListener("submit", (evt) => {
-  evt.preventDefault();
-  const data = Object.fromEntries(new FormData(registerForm));
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const data = new FormData(form);
+  const object = {};
+
+  data.forEach((value, key) => {
+    object[key] = value;
+  });
+
   fetch("/api/session/register", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(object),
     headers: {
       "Content-type": "application/json",
     },
   })
-    .then((res) => res.json())
-    .then((res) => {
-      if (res.error) {
-        registerForm.firstChild.textContent = `${res.error}`;
-        return console.log(res.error);
-      } else {
-        location.assign("login");
-      }
-    });
+    .then((result) => result.json())
+    .then((json) => console.log(json));
 });

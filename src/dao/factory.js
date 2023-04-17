@@ -1,50 +1,36 @@
-import mongoose from "mongoose";
 import config from "../config/config.js";
+import mongoose from "mongoose";
 
-export let Carts;
-export let Products;
-export let Users;
+export let users, carts, products, tickets, messages, connection;
 
 switch (config.persistence) {
-  case "mongodb":
-    mongoose.set("strictQuery", false);
-    mongoose.connect(config.mongoUrl, (error) => {
-      if (error) {
-        console.log("No hubo conexion", error);
-        process.exit();
-      }
-      console.log("Conection with mongodb success");
-    });
-    const { default: CartsMongo } = await import(
-      "./classes/dbManager/CartsManager.js"
-    );
-    const { default: ProductsMongo } = await import(
-      "./classes/dbManager/ProductsManager.js"
-    );
-    const { default: UsersMongo } = await import(
-      "./classes/dbManager/UsersManager.js"
-    );
-
-    Carts = CartsMongo;
-    Products = ProductsMongo;
-    Users = UsersMongo;
+  case "MONGO":
+    connection = mongoose.connect(config.connection);
+    const { default: usersMongo } = await import("./dbManagers/users.js");
+    const { default: cartsMongo } = await import("./dbManagers/carts.js");
+    const { default: productsMongo } = await import("./dbManagers/products.js");
+    const { default: ticketsMongo } = await import("./dbManagers/tickets.js");
+    const { default: messagesMongo } = await import("./dbManagers/messages.js");
+    users = usersMongo;
+    carts = cartsMongo;
+    products = productsMongo;
+    tickets = ticketsMongo;
+    messages = messagesMongo;
     break;
-
-  case "filesystem":
-    console.log("Working with filesystem");
-
-    const { default: CartsMemory } = await import(
-      "./classes/fileManager/cartsManager.js"
+  case "MEMORY":
+    const { default: usersMemory } = await import("./memory/users.js");
+    const { default: cartsMemory } = await import("./memory/cartManager.js");
+    const { default: productsMemory } = await import(
+      "./memory/productManager.js"
     );
-    const { default: ProductsMemory } = await import(
-      "./classes/fileManager/productManager.js"
+    const { default: ticketsMemory } = await import("./memory/tickets.js");
+    const { default: messagesMemory } = await import(
+      "./memory/messagesManager.js"
     );
-    const { default: UsersMemory } = await import(
-      "./classes/fileManager/usersManager.js"
-    );
-
-    Carts = CartsMemory;
-    Products = ProductsMemory;
-    Users = UsersMemory;
+    users = usersMemory;
+    carts = cartsMemory;
+    products = productsMemory;
+    tickets = ticketsMemory;
+    messages = messagesMemory;
     break;
 }

@@ -1,93 +1,165 @@
-import { CartsService } from "../dao/repositories/index.js";
+import {faker} from '@faker-js/faker';
+import { tickets as Ticket } from '../dao/factory.js';
+import { CartsService as cm, ProductsService as pm } from '../dao/repository/index.js';
 
-export const getAll = async (req, res) => {
-  const getResponse = await CartsService.getAll();
+const tm = new Ticket();
 
-  return !getResponse.error
-    ? res.send(getResponse)
-    : res.status(getResponse.status).send(getResponse);
-};
+export default class CartController {
+    get = async(req, res) => {
+        let carts = await cm.get();
 
-export const getById = async (req, res) => {
-  const id = req.params.cid;
-  const getResponse = await CartsService.getById(id);
+        (!carts)?res.send({status: 404, error: "No info avaliable"}):res.send({status: "Ok", payload: carts});
+    }
 
-  return !getResponse.error
-    ? res.send(getResponse)
-    : res.status(getResponse.status).send(getResponse);
-};
+    getOne = async(req, res) => {
+        let cid = req.params.cid;
+        let carts = await cm.getOne(cid);
+        (!carts)?res.send({status: 404, error: "No info avaliable"}):res.send({status: "Ok", payload: carts});
+    }
 
-export const post = async (req, res) => {
-  const postResponse = await CartsService.post();
+    post = async(req, res) => {
+        let result = await cm.post();
+        res.send({status: "Ok", payload: result});
+    }
 
-  return !postResponse.error
-    ? res.send(postResponse)
-    : res.status(postResponse.status).send(postResponse);
-};
+    postPurchase = async(req, res) => {
+        let cid = req.params.cid;
+        console.log(req.user.user)
+        try {
+            let cart = await cm.getOne(cid);
+            let cartProducts = cart.products;
+            let ticketTotal = 0;
+            let valid = false;
 
-export const postProductToCart = async (req, res) => {
-  const { cid, pid } = req.params;
-  const postResponse = await CartsService.postProductToCart(cid, pid);
+            cartProducts.forEach(product => {
+                if (product.quantity <= product._id.stock) {
+                    let currentProduct = product._id;
+                    currentProduct.stock -= product.quantity;
+                    ticketTotal+=currentProduct.price*product.quantity;
+                    pm.put(product._id._id, currentProduct); // Actualiza el producto
+                    cartProducts.splice(cartProducts.findIndex(element => element._id._id == currentProduct._id), 1);
+                    valid = true;
+                }
+            });
 
-  return !postResponse.error
-    ? res.send(postResponse)
-    : res.status(postResponse.status).send(postResponse);
-};
+            if (!valid) return res.send({status: 400, message: "You need to have products you can buy"});
 
-export const putProducts = async (req, res) => {
-  const cid = req.params.cid;
-  const products = req.body;
-  const putResponse = await CartsService.putProducts(cid, products);
+            cart.products = cartProducts;
+            cm.put(cart._id, cart);
 
-  return !putResponse.error
-    ? res.send(putResponse)
-    : res.status(putResponse.status).send(putResponse);
-};
+            let date = new Date(Date.now()).toLocaleString();
+            let code = faker.database.mongodbObjectId();
+            let user = req.user.user.email;
 
-export const putProductQuantity = async (req, res) => {
-  const { cid, pid } = req.params;
-  const { quantity } = req.body;
-  const putResponse = await CartsService.putProductQuantity(cid, pid, quantity);
+            tm.post({code, purchaser: user, purchase_datetime: date, amount: ticketTotal});
 
-  return !putResponse.error
-    ? res.send(putResponse)
-    : res.status(putResponse.status).send(putResponse);
-};
+            res.send({status: "Ok", payload: {code, purchaser: user, purchase_datetime: date, amount: ticketTotal}});
+        } catch(e) {
+            console.log(e);
+            res.send({status: 500, message: "Something went wrong"});
+        }
+    }
 
-export const deleteProductToCart = async (req, res) => {
-  const cid = req.params.cid;
-  const pid = req.params.pid;
-  const deleteResponse = await CartsService.deleteProductToCart(cid, pid);
+    put = async(req, res) => {
+        try {
+            let cid = req.params.cid;
+            let products = req.body;
+        
+            let cart = await cm.getOne(cid);
+            let cartProducts = cart.products;
+        
+            let ids = [];
+            if (cartProducts.length > 0) {
+                cartProducts.forEach(product => {
+                    ids.push(product._id);
+                })
+            }
+            
+            products.forEach(async(product) => {
+                const search = (element) => element == product._id
+        
+                let valid = ids.findIndex(search);
+            
+                if (valid != -1) {
+                    cartProducts[valid].quantity = product.quantity;
+                } else {
+                    cartProducts.push(product);
+                }
+            })
+        
+            cart.products = cartProducts;
+            let result = await cm.put(cid, cart);
+            res.send(result);
+        } catch {
+            res.send({status: 404, message: "The cart ID doesnt exist or you are not sending an array"});
+        }
+    }
 
-  return !deleteResponse.error
-    ? res.send(deleteResponse)
-    : res.status(deleteResponse.status).send(deleteResponse);
-};
+    putProduct = async(req, res) => {
+        try {
+            let cid = req.params.cid;
+            let pid = req.params.pid;
+            let {quantity} = req.body;
+            
+            let cart = await cm.getOne(cid);
+            let exist = false;
+            cart.products.forEach(product => {
+                if (product._id == pid) {
+                    product.quantity = quantity;
+                    exist = true
+                }
+            })
+            if (exist === true) {
+                let result = await cm.put(cid, cart);
+                res.send({status: "Ok", payload: result});
+            } else {
+                res.send({status: 404, message: "Product doesnt exist in cart"});
+            }
+        } catch {
+            res.send({status: 404, message: "The product or cart doesnt exist"});
+        }
+    }
 
-export const deleteProducts = async (req, res) => {
-  const cid = req.params.cid;
-  const deleteResponse = await CartsService.deleteProducts(cid);
+    delete = async(req, res) => {
+        try {
+            const id = req.params.cid;
+            let result = await cm.deleteCart(id);
+            res.send({status: "Ok", payload: result});
+        } catch {
+            res.send({status: 404, message: "The cart doesnt exist"});
+        }
+    }
 
-  return !deleteResponse.error
-    ? res.send(deleteResponse)
-    : res.status(deleteResponse.status).send(deleteResponse);
-};
-
-export const deleteById = async (req, res) => {
-  const cid = req.params.cid;
-  const deleteResponse = await CartsService.deleteById(cid);
-
-  return !deleteResponse.error
-    ? res.send(deleteResponse)
-    : res.status(deleteResponse.status).send(deleteResponse);
-};
-
-export const purchase = async (req, res) => {
-  const cid = req.params.cid;
-  //const purchaser = req.user.email;
-  const purchaseResponse = await CartsService.purchase(cid);
-
-  return !purchaseResponse.error
-    ? res.send(purchaseResponse)
-    : res.status(purchaseResponse.status).send(purchaseResponse);
-};
+    deleteProduct = async(req, res) => {
+        try {
+            const id = req.params.cid;
+            let productId = req.params.pid;
+        
+            let productExist = await pm.getOne(productId);
+            
+            if (!productExist) {
+                res.send({status: 404, payload: "Product doesnt exist"});
+            } else {
+                let cart = await cm.getOne(id);
+        
+                if (!cart) {
+                    res.send({status: 404, payload: "Cart doesnt exist"});
+                } else {
+                    let productsInCart = cart.products;
+                    let idToSearch = (element) => element.id === productId;
+                    if (idToSearch == -1) {
+                        res.send({status: 404, payload: "El producto no existe dentro del carrito"});
+                    } else {
+                        let position = productsInCart.findIndex(idToSearch);
+                        productsInCart.splice(position, 1);
+                        let result = await cm.put(id, cart);
+                        res.send({status: "Ok", payload: result});
+                    }
+                }
+            }
+        } catch {
+            res.send({status: 404, message: "The product or cart doesnt exist"});
+    
+        }
+    }
+}
