@@ -1,3 +1,3 @@
 const purchase = () => {
-    fetch
-}
+  fetch;
+};

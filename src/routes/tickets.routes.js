@@ -5,10 +5,10 @@ import passport from "passport";
 const router = Router();
 const tm = new TicketController();
 
-router.get('/', tm.get);
+router.get("/", tm.get);
 
-router.get('/:tid', tm.getOne);
+router.get("/:tid", tm.getOne);
 
-router.post('/:cid', passport.authenticate('jwt', {session: false}), tm.post);
+router.post("/:cid", passport.authenticate("jwt", { session: false }), tm.post);
 
 export default router;

@@ -1,28 +1,28 @@
-const closeSession = async() => {
-    let response = await fetch('/api/session/logout', {
-        method: 'POST',
-        body: "",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    })
+const closeSession = async () => {
+  let response = await fetch("/api/session/logout", {
+    method: "POST",
+    body: "",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
-    console.log(response);
+  console.log(response);
 
-    if (response.status != 200) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Something went wrong'
-        })
-        return;
-    }
-
+  if (response.status != 200) {
     Swal.fire({
-        icon: 'success',
-        title: 'Logged out succesfully'
-    })
+      icon: "error",
+      title: "Something went wrong",
+    });
+    return;
+  }
 
-    setTimeout(function() {
-        location.replace('/login');
-    }, 900);
-}
+  Swal.fire({
+    icon: "success",
+    title: "Logged out succesfully",
+  });
+
+  setTimeout(function () {
+    location.replace("/login");
+  }, 900);
+};

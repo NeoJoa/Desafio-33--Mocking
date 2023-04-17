@@ -1,100 +1,180 @@
-import { ProductsService as pm } from '../dao/repository/index.js';
+import { ProductsService as pm } from "../dao/repository/index.js";
+import { faker } from "@faker-js/faker";
+import { CustomError, generateErrorInfo } from "../errors.js";
 
 export default class ProductController {
-    get = async(req, res) => {
-        try {
-            let {limit = 10, page = 1, query = 'none', sort} = req.query;
-            let products;
-        
-            if (query != "none") {
-        
-                let replaces = 0; // Reemplazar ' por "
-                for (var i = 0; i < query.length; i++) {
-                    if (query[i] == "'") replaces += 1;
-                }
-                for (var i = 0; i < replaces; i ++) {
-                    query = query.replace(/'/, '"');
-                }
-        
-                JSON.parse(query);
-                products = await pm.getSome(limit, page, query, sort);
-            } else {
-                products = await pm.getSome(limit, page, undefined, sort);
-            }
-        
-            page = parseInt(page);
-            let nextLink, prevLink;
-        
-            let invCharacters = 0; // Reemplaza los "" por su equivalente ASCII asi los links son validos
-            for (var i = 0; i < query.length; i++) {
-                if (query[i] == '"') invCharacters += 1;
-            }
-            for (var i = 0; i < invCharacters; i ++) {
-                query = query.replace(/"/, '%22');
-            }
-            query = query.replace(" ",""); // Quita un espacio por las dudas
-        
-            (products.hasNextPage == true ) ? nextLink = `http://localhost:8080/api/products/?limit=${limit}&page=${page+1}&query=${query}` : nextLink = null;
-            (products.hasPrevPage == true ) ? prevLink = `http://localhost:8080/api/products/?limit=${limit}&page=${page-1}&query=${query}` : prevLink = null;
-            
-            (!products)?res.status(500).send({status: "Error", error: "No info avaliable"}):res.send({status: "Ok", payload: products.docs, totalPages: products.totalPages, prevPage: products.prevPage, nextPage: products.nextPage, page: products.page, hasPrevPage: products.hasPrevPage, hasNextPage: products.hasNextPage, nextLink: nextLink, prevLink: prevLink});
-        } catch {
-            res.send({status: 400, message: "Query must me sent in the format query={'property':'condition'} with single or double marks"});
-        }
-    }
+  get = async (req, res, next) => {
+    try {
+      let { limit = 10, page = 1, query = "none", sort } = req.query;
+      let products;
 
-    post = async(req, res) => {
-        try {
-            const {title, description, code, price, stock, thumbnails} = req.body;
-            let newProduct = {
-                title,
-                description,
-                code,
-                price,
-                stock,
-                thumbnails
-            }
-        
-            if (!title || !description || !code || !price || !stock) {
-                res.send({status: 404, payload: "Some data is missing"});
-            } else {
-                const result = await pm.saveProduct(newProduct);
-                res.send({status: "Ok", payload: result});
-            }
-        } catch {
-            res.send({status: 400, message: "This method only allows to create one product and the code must be not used"});
+      if (query != "none") {
+        let replaces = 0; // Reemplazar ' por "
+        for (var i = 0; i < query.length; i++) {
+          if (query[i] == "'") replaces += 1;
         }
-    }
+        for (var i = 0; i < replaces; i++) {
+          query = query.replace(/'/, '"');
+        }
 
-    put = async(req, res) => {
-        try {
-            const id = req.params.pid;
-    
-            const {title, description, code, price, stock, thumbnails} = req.body;
-            let newProduct = {
-                title,
-                description,
-                code,
-                price,
-                stock,
-                thumbnails
-            }
-    
-            let result = await pm.put(id, newProduct);
-            res.send({status: "Ok", payload: result});
-        } catch {
-            res.send({status: 400, message: "The pid doesnt exist"});
-        }
-    }
+        JSON.parse(query);
+        products = await pm.getSome(limit, page, query, sort);
+      } else {
+        products = await pm.getSome(limit, page, undefined, sort);
+      }
 
-    delete = async(req, res) => {
-        try {
-            const id = req.params.pid;
-    
-            let result = await pm.delete(id);
-            res.send({status: "Ok", payload: result});
-        } catch {
-            res.send({status: 400, message: "The pid doesnt exist"});
-        }
+      page = parseInt(page);
+      let nextLink, prevLink;
+
+      let invCharacters = 0; // Reemplaza los "" por su equivalente ASCII asi los links son validos
+      for (var i = 0; i < query.length; i++) {
+        if (query[i] == '"') invCharacters += 1;
+      }
+      for (var i = 0; i < invCharacters; i++) {
+        query = query.replace(/"/, "%22");
+      }
+      query = query.replace(" ", ""); // Quita un espacio por las dudas
+
+      products.hasNextPage == true
+        ? (nextLink = `http://localhost:8080/api/products/?limit=${limit}&page=${
+            page + 1
+          }&query=${query}`)
+        : (nextLink = null);
+      products.hasPrevPage == true
+        ? (prevLink = `http://localhost:8080/api/products/?limit=${limit}&page=${
+            page - 1
+          }&query=${query}`)
+        : (prevLink = null);
+
+      if (!products) {
+        CustomError.createError({
+          statusCode: 500,
+          name: "No info avaliable",
+          cause: generateErrorInfo.getEmptyDatabase(),
+          code: 3,
+        });
+      }
+      res.send({
+        status: "Ok",
+        payload: products.docs,
+        totalPages: products.totalPages,
+        prevPage: products.prevPage,
+        nextPage: products.nextPage,
+        page: products.page,
+        hasPrevPage: products.hasPrevPage,
+        hasNextPage: products.hasNextPage,
+        nextLink: nextLink,
+        prevLink: prevLink,
+      });
+    } catch (error) {
+      next(error);
     }
+  };
+
+  getMockProducts = async (req, res) => {
+    let docs = [];
+    for (var i = 0; i < 100; i++) {
+      docs.push({
+        _id: faker.database.mongodbObjectId(),
+        title: faker.commerce.product(),
+        description: faker.commerce.productDescription(),
+        code: faker.datatype.string(),
+        price: faker.commerce.price(),
+        stock: faker.random.numeric(2),
+        __v: 0,
+      });
+    }
+    res.send({
+      status: "Ok",
+      payload: {
+        docs,
+        totalDocs: 100,
+        limit: 100,
+        totalPages: 1,
+        page: 1,
+        pagingCounter: 1,
+        hasPrevPage: false,
+        hasNextPage: false,
+        prevPage: null,
+        nextPage: null,
+      },
+    });
+  };
+
+  post = async (req, res, next) => {
+    try {
+      const { title, description, code, price, stock, thumbnails } = req.body;
+      let newProduct = {
+        title,
+        description,
+        code,
+        price,
+        stock,
+        thumbnails,
+      };
+
+      if (!title || !description || !code || !price || !stock) {
+        CustomError.createError({
+          statusCode: 404,
+          name: "Some data is missing",
+          cause: generateErrorInfo.getEmptyDatabase(),
+          code: 4,
+        });
+      }
+      const result = await pm.saveProduct(newProduct);
+      res.send({ status: "Ok", payload: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  put = async (req, res, next) => {
+    try {
+      const id = req.params.pid;
+
+      const { title, description, code, price, stock, thumbnails } = req.body;
+      let newProduct = {
+        title,
+        description,
+        code,
+        price,
+        stock,
+        thumbnails,
+      };
+
+      let exists = pm.getOne(id);
+      if (!exists)
+        CustomError.createError({
+          statusCode: 400,
+          name: "Product doesnt exist",
+          cause: generateErrorInfo.idNotFound(),
+          code: 2,
+        });
+
+      let result = await pm.put(id, newProduct);
+      res.send({ status: "Ok", payload: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  delete = async (req, res, next) => {
+    try {
+      const id = req.params.pid;
+
+      let exists = pm.getOne(id);
+      if (!exists)
+        CustomError.createError({
+          statusCode: 400,
+          name: "Product doesnt exist",
+          cause: generateErrorInfo.idNotFound(),
+          code: 2,
+        });
+
+      let result = await pm.delete(id);
+      res.send({ status: "Ok", payload: result });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

@@ -6,5 +6,5 @@ export const isUser = (req, res, next) => {
     console.log(req.user);
   })(req, res, next);
   if (req.user.user.role === "user") return next();
-  return res.send({status: "error", message: "User role required"});
+  return res.send({ status: "error", message: "User role required" });
 };

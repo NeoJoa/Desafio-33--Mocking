@@ -18,5 +18,21 @@ form.addEventListener("submit", (event) => {
     },
   })
     .then((result) => result.json())
-    .then((json) => console.log(json));
+    .then((json) => {
+      if (json.status == "Ok") {
+        Swal.fire({
+          icon: "success",
+          title: "Account created succesfully",
+        });
+        setTimeout(function () {
+          location.replace("/login");
+        }, 900);
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Oops, the account wasnt created",
+          text: json.error || "The email is already used",
+        });
+      }
+    });
 });

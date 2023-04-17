@@ -1,21 +1,22 @@
 const form = document.getElementById("recoverForm");
 
-form.addEventListener('submit', event => {
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
 
-    event.preventDefault();
+  const data = new FormData(form);
+  const object = {};
 
-    const data = new FormData(form);
-    const object = {};
+  data.forEach((value, key) => {
+    object[key] = value;
+  });
 
-    data.forEach((value, key) => {
-        object[key] = value;
-    })
-    
-    fetch('/api/session/recover', {
-        method: 'POST',
-        body: JSON.stringify(object),
-        headers: {
-            'Content-type': 'application/json'
-        }
-    }).then(result => result.json()).then(json => console.log(json));
-})
+  fetch("/api/session/recover", {
+    method: "POST",
+    body: JSON.stringify(object),
+    headers: {
+      "Content-type": "application/json",
+    },
+  })
+    .then((result) => result.json())
+    .then((json) => console.log(json));
+});

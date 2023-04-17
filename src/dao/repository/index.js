@@ -1,4 +1,4 @@
-import { carts, products, users } from "../factory.js";
+import { users, carts, products } from "../factory.js";
 import CartsRepository from "./carts.repository.js";
 import ProductsRepository from "./products.repository.js";
 import UsersRepository from "./users.repository.js";
